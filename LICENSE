@@ -1,21 +1,110 @@
-MIT License
+# Quantova Licensing Overview
 
-Copyright (c) 2026 
+**Repository:** `qweb3.js` — Quantova Post-Quantum Web3 Client SDK (JavaScript / TypeScript)
 
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
+This repository contains software and documentation developed and maintained by Quantova Inc. This file serves as the authoritative licensing index for the contents of this repository and applies to all contents of this repository unless explicitly stated otherwise. It is published in alignment with the licensing standard of the wider Quantova technology stack.
 
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
+## Copyright and Ownership
 
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.
+© 2026 Quantova Inc. All rights reserved.
+
+Quantova Inc is a company registered in Singapore and is the legal owner and steward of:
+
+- The Quantova protocol
+- The QRC20 network standards
+- The Quantova Virtual Machine (QVM)
+- The Provenance and Quantization Registry (PQR)
+- Associated research, specifications, client libraries, and reference implementations
+
+`qweb3.js` is the official JavaScript and TypeScript client SDK for the Quantova network and forms part of this stack.
+
+## Primary License: Business Source License (BUSL-1.1)
+
+Unless otherwise stated, all contents of this repository — including the SDK source code, reference implementations, examples, and documentation — are licensed under the Business Source License, version 1.1 (BUSL-1.1).
+
+The full license text is included in this repository at:
+
+```
+/LICENSE-BUSL-1.1
+```
+
+The authoritative BUSL-1.1 license text may also be obtained from: https://mariadb.com/bsl11/
+
+Key parameters for this repository:
+
+- **Licensor:** Quantova Inc.
+- **Licensed Work:** `qweb3.js` — Quantova Post-Quantum Web3 Client SDK, © 2026 Quantova Inc.
+- **Change Date:** 2029-06-01 (or the fourth anniversary of the first public distribution of a given version, whichever comes first).
+- **Change License:** Apache License, Version 2.0.
+
+On the Change Date, each version of the Licensed Work converts automatically to the Change License.
+
+## What This Repository Contains
+
+This repository provides the client-side developer SDK used to interact with the canonical Quantova network: post-quantum key generation and signing (Falcon, Dilithium, SPHINCS+), the `q_*` JSON-RPC client, the QVM contract layer (Solidity ABI encoding/decoding and event-log decoding), QNS `.q` name resolution, fee and gas estimation, batch requests, event hooks, a REST gateway client, and the `qweb3-cli` toolbelt. It does not contain Quantova consensus, runtime, or node implementation code.
+
+## Application and Integration Clarification
+
+Building applications, wallets, services, dashboards, integrations, and developer tooling on top of this SDK that interact with the canonical Quantova network is explicitly permitted under the BUSL-1.1 license and does not constitute restricted "Production Use." Using this SDK to submit transactions, query state, manage keys, and operate infrastructure on the Quantova network does not create additional licensing obligations.
+
+## Validator and Node Operator Clarification
+
+Running a validator node or full node on the canonical Quantova network, and using this SDK to support such operation, is explicitly permitted under the BUSL-1.1 license and does not constitute restricted "Production Use."
+
+A formal clarification for validators, node operators, exchanges, custodians, and infrastructure providers is provided at:
+
+```
+/docs/validators/licensing.md
+```
+
+Participation in staking, consensus, block production, and transaction processing on the Quantova network does not create additional licensing obligations.
+
+## Restricted Use Under BUSL-1.1
+
+The BUSL-1.1 license restricts use of the Licensed Work, together with Quantova consensus, runtime, and QVM code, to launch, operate, or market a competing blockchain network or distributed ledger that is not the canonical Quantova network. It further restricts offering the Licensed Work to third parties as a hosted or managed service, or otherwise using the Licensed Work to provide a commercial product or service that competes with the products or services of the Licensor.
+
+This restriction applies to, but is not limited to:
+
+- Independent or derivative mainnets
+- Forks marketed as separate networks
+- Networks intended to replace or compete with Quantova
+- SDK distributions repackaged or offered as a competing managed service
+
+Forking, modifying, or analyzing the code for testing, auditing, research, or contribution purposes is permitted.
+
+## Canonical Network Definition
+
+For licensing and authorization purposes, the canonical Quantova network is defined by all of the following:
+
+- Official signed source releases published by Quantova Inc
+- A unique post-quantum genesis hash
+- Signed runtime and protocol artifacts
+- Post-quantum cryptographic signatures, including CRYSTALS-Dilithium and Falcon
+
+Any network deployment that does not match these identifiers is not the Quantova network and is not authorized under the Quantova BUSL license.
+
+## Documentation and Specifications
+
+Documentation, research materials, and protocol specifications included in this repository are licensed under BUSL-1.1 unless explicitly stated otherwise within the relevant file or directory. Documentation is provided for informational and technical reference purposes and reflects protocol behavior enforced by code.
+
+## Third-Party Software
+
+This repository depends on third-party open-source software. Such components remain subject to their original licenses. This includes, among others, the Quantova `@quantova/*` packages (derived from polkadot-js, licensed under Apache-2.0, with applicable trademark notices) and `axios` (MIT). Where applicable, third-party license notices are provided in:
+
+```
+/THIRD_PARTY_LICENSES.md
+```
+
+or within dependency manifests (for example, `package.json`).
+
+## No Legal, Financial, or Regulatory Advice
+
+Nothing in this repository, including documentation and specifications, constitutes legal, financial, or regulatory advice. Operators, validators, and users are responsible for ensuring compliance with applicable laws and regulations in their respective jurisdictions.
+
+## Institutional and Licensing Inquiries
+
+Licensing, institutional, and regulatory inquiries relating to the Quantova technology stack should be directed through official Quantova channels published by Quantova Inc.
+
+Protocol identity and licensing intent are cryptographically anchored at genesis via an immutable on-chain commitment.
+
+© 2026 Quantova Inc
