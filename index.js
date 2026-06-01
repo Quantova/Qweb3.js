@@ -1,4 +1,5 @@
 // index.js
+// Enjoy Quantova QWEB3.JS 
 
 // Utilities
 const { 
