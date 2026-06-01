@@ -1,0 +1,52 @@
+{
+  "name": "qweb3.js",
+  "version": "1.1.0",
+  "description": "Quantova Post-Quantum Web3 Client SDK",
+  "main": "index.js",
+  "module": "index.mjs",
+  "types": "index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./index.mjs",
+      "require": "./index.js"
+    }
+  },
+  "bin": {
+    "qweb3-cli": "./src/cli/index.js"
+  },
+  "files": [
+    "index.js",
+    "index.mjs",
+    "index.d.ts",
+    "src",
+    "README.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "test": "node test.js",
+    "cli": "node ./src/cli/index.js"
+  },
+  "keywords": [
+    "quantova",
+    "web3",
+    "post-quantum",
+    "blockchain",
+    "qvm",
+    "dilithium",
+    "falcon",
+    "sphincs-plus",
+    "sdk"
+  ],
+  "dependencies": {
+    "@quantova/api": "^1.0.2",
+    "@quantova/keyring": "^1.0.2",
+    "@quantova/util": "^1.0.2",
+    "@quantova/util-crypto": "^1.0.2",
+    "@quantova/falcon-wasm": "^1.0.2",
+    "@quantova/rpc-provider": "^1.0.2",
+    "axios": "^1.13.4"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}

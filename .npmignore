@@ -1,0 +1,13 @@
+# Ignore test files and suites
+tests/
+test.js
+
+# Ignore configuration files
+.prettierrc
+.eslintrc.json
+.github/
+
+# Ignore scratch files
+scratch/
+*.tgz
+*.log
