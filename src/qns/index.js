@@ -8,8 +8,8 @@
 // transaction through the wallet.
 //
 //   const qns = new QNS({ registryAddress, rpc, wallet, restClient });
-//   const addr  = await qns.resolve('alice.q');     // -> '0x...'/Base64 address
-//   const name  = await qns.reverse('0x...');        // -> 'alice.q' or null
+//   const addr  = await qns.resolve('alice.q');     // -> a "Q1..." account address (or null)
+//   const name  = await qns.reverse('Q1...');        // -> 'alice.q' or null
 //   const owner = await qns.owner('alice.q');
 //
 // The registry ABI below is a conventional ENS-style resolver/registrar surface
