@@ -26,7 +26,7 @@ names, and reads the same data through the public REST gateway when you prefer H
 * **Unified event hooks** — real-time block streaming plus per-transaction `pending → receipt → confirmed` tracking.
 * **REST fallback** — every read can fall back to the Quantova public REST gateway (`/v1/...`).
 * **CLI toolbelt** — `qweb3-cli` generates PQC wallets, inspects addresses, and calls a node from the terminal.
-* **Hybrid addressing** — handles both legacy hex (`0x...`) and Quantova Base64 H160 addresses.
+* **Q-branded addressing** — accounts are Bech32m `Q1...` (letters + digits, no symbols); 24-word recovery phrase; `QSEC1...` private keys and `QPUB1...` public keys. Solidity/QVM contract addresses remain `0x...` hex.
 * **Dual delivery & typings** — ships as CommonJS (`.js`), ES modules (`.mjs`), and TypeScript definitions (`index.d.ts`).
 
 ---
@@ -95,8 +95,10 @@ const { QuantumWallet, QuantumSigner } = require('qweb3.js');
 
 const wallet = new QuantumWallet();
 const account = wallet.create('falcon');           // 'falcon' | 'dilithium' | 'sphincsp'
-console.log('Address:   ', account.address);
-console.log('Public key:', account.publicKey);
+console.log('Address:    ', account.address);       // "Q1..."   (Bech32m)
+console.log('Seed phrase:', account.mnemonic);      // 24 recovery words
+console.log('Private key:', account.privateKey);    // "QSEC1..." (Bech32m of the seed)
+console.log('Public key: ', account.publicKey);     // "QPUB1..." (Bech32m)
 
 const message = 'Quantova post-quantum extrinsic';
 const signatureHex = wallet.signTransaction(message, account.address);
@@ -113,7 +115,7 @@ const { QRpcClient } = require('qweb3.js');
 const client = new QRpcClient('http://127.0.0.1:9944');
 
 const blockNumber = await client.blockNumber();
-const balance = await client.getBalance('QOuhXUELsRC0/zow/Vjwft8hNP8=');
+const balance = await client.getBalance('Q1GZD3AGFY5U426V9NX6UNE06ZC4YVKNK3GU9L3C');
 console.log({ blockNumber, balance });
 ```
 
