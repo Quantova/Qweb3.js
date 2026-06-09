@@ -150,7 +150,13 @@ function encodeValue(t, value) {
     case 'bool':
       return { bytes: bigIntToWord(value ? 1 : 0, false), dynamic: false };
     case 'address': {
-      const b = typeof value === 'string' ? hexToBytes(value) : value;
+      // Accept a Q-branded account address ("Q1...") and convert to its 20-byte body,
+      // as well as a 0x-hex contract/Solidity address. Both encode to the same 20-byte word.
+      let v = value;
+      if (typeof v === 'string' && /^(Q1|q1)/.test(v)) {
+        v = require('../utils/keys').toNodeAddress(v);
+      }
+      const b = typeof v === 'string' ? hexToBytes(v) : v;
       if (b.length !== 20) throw new Error('address must be 20 bytes');
       const word = new Uint8Array(32);
       word.set(b, 12);
