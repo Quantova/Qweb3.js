@@ -3,7 +3,7 @@
 const { hexToU8a } = require('@quantova/util');
 const { keccakAsHex } = require('@quantova/util-crypto');
 const { sha3_256 } = require('./sha3');
-const { encodeAddress, decodeAddress } = require('./keys');
+const { encodeAddress, decodeAddress, decodePublicKey } = require('./keys');
 
 // A Quantova account address is Bech32m with prefix "q", shown all-capitals -> "Q1...".
 // Case must be uniform (all-upper or all-lower); the decoder verifies the checksum.
@@ -40,7 +40,9 @@ class AddressUtils {
    */
   static accountBodyFromPublicKey(publicKey) {
     let buf;
-    if (typeof publicKey === 'string') {
+    if (typeof publicKey === 'string' && /^(QPUB1|qpub1)/.test(publicKey)) {
+      buf = decodePublicKey(publicKey);
+    } else if (typeof publicKey === 'string') {
       buf = hexToU8a(publicKey.startsWith('0x') ? publicKey : `0x${publicKey}`);
     } else if (publicKey instanceof Uint8Array || Buffer.isBuffer(publicKey)) {
       buf = Uint8Array.from(publicKey);
