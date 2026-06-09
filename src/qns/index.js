@@ -142,7 +142,9 @@ class QNS {
    * node `<addr-hex-no-0x>.addr.reverse`. Returns the name string or null.
    */
   async reverse(address) {
-    const hexAddr = String(address).toLowerCase().replace(/^0x/, '');
+    const { toNodeAddress } = require('../utils/keys');
+    // Accept a "Q1..." account address or a 0x contract address; the reverse node uses the hex body.
+    const hexAddr = toNodeAddress(address).replace(/^0x/, '').toLowerCase();
     const reverseName = `${hexAddr}.addr.reverse`;
     const node = this.namehash(reverseName);
     try {
