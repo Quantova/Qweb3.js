@@ -139,12 +139,12 @@ async function main() {
         out({
           address: addr,
           isValid: AddressUtils.isAddress(addr),
-          isLegacyHex: /^0x[a-fA-F0-9]{40}$/.test(addr),
-          isPostQuantumBase64: /^[A-Za-z0-9+/]{27}=$/.test(addr),
+          isQuantovaAccount: /^(Q1|q1)/.test(addr) && AddressUtils.isAddress(addr),
+          isContractAddress: /^0x[a-fA-F0-9]{40}$/.test(addr),
         }, asJson);
       } else if (sub === 'from-pubkey') {
         const pk = rest[0];
-        if (!pk) throw new Error('address from-pubkey requires a 0xpublickey');
+        if (!pk) throw new Error('address from-pubkey requires a public key (hex or QPUB1...)');
         out({ address: AddressUtils.deriveAddressFromPublicKey(pk) }, asJson);
       } else {
         throw new Error(`unknown address subcommand '${sub}' (inspect|from-pubkey)`);
