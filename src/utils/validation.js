@@ -1,29 +1,37 @@
 // src/utils/validation.js
 
+const AddressUtils = require('./address');
+const { decodePrivateKey } = require('./keys');
+
 class ValidationUtils {
   /**
-   * Validates if a string is a valid address.
-   * Supports both legacy EVM hex (0x...) and post-quantum Quantova Base64 H160 addresses.
-   * 
+   * Validates if a string is a valid address: a Quantova account address ("Q1...") or a 0x H160
+   * contract address. Delegates to AddressUtils so there is a single source of truth.
+   *
    * @param {string} address - The address to validate.
    * @returns {boolean} - True if the address is valid, otherwise false.
    */
   static isAddress(address) {
-    if (typeof address !== 'string') return false;
-    // Legacy EVM address
-    if (/^0x[a-fA-F0-9]{40}$/.test(address)) return true;
-    // Post-quantum base64 H160 address
-    return /^[A-Za-z0-9+/]{27}=$/.test(address);
+    return AddressUtils.isAddress(address);
   }
 
   /**
-   * Validates if a string is a valid Quantova private key (64 hex characters, with or without 0x prefix).
-   * 
+   * Validates a Quantova private key: a "QSEC1..." Bech32m key (or, during migration, a legacy
+   * 64-hex seed with or without 0x).
+   *
    * @param {string} privateKey - The private key to validate.
    * @returns {boolean} - Returns true if the private key is valid, otherwise false.
    */
   static isPrivateKey(privateKey) {
     if (typeof privateKey !== 'string') return false;
+    if (/^(QSEC1|qsec1)/.test(privateKey)) {
+      try {
+        decodePrivateKey(privateKey);
+        return true;
+      } catch {
+        return false;
+      }
+    }
     return /^0x[0-9a-fA-F]{64}$/.test(privateKey) || /^[0-9a-fA-F]{64}$/.test(privateKey);
   }
 
