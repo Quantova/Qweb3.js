@@ -141,14 +141,15 @@ const erc20Abi = [
     { name: 'value', type: 'uint256', indexed: false } ] },
 ];
 
-const token = q.contract(erc20Abi, '0xYourTokenAddress');
+// The token's own address is a Solidity/QVM contract address (0x hex):
+const token = q.contract(erc20Abi, '0xYourTokenContractAddress');
 
-// Read (q_call, REST fallback) — decoded automatically:
-const bal = await token.call('balanceOf', ['0xHolderAddress']);
+// Account arguments are passed as Q-branded addresses; the SDK converts them for the ABI:
+const bal = await token.call('balanceOf', ['Q1HolderAccountAddress...']);
 
 // Write (built, post-quantum signed by the wallet, then broadcast):
 const account = q.wallet.create('falcon');
-const txHash = await token.send('transfer', ['0xRecipient', 1000n], { from: account.address });
+const txHash = await token.send('transfer', ['Q1RecipientAccount...', 1000n], { from: account.address });
 
 // Decode logs from a receipt into readable events:
 const receipt = await q.rpc.getTransactionReceipt(txHash);
@@ -170,20 +171,20 @@ AbiCodec.eventTopic('Transfer(address,address,uint256)');  // '0xddf2...3b3ef'
 
 const data = AbiCodec.encodeFunctionCall(
   { name: 'transfer', inputs: [{ type: 'address' }, { type: 'uint256' }] },
-  ['0x1111111111111111111111111111111111111111', 1000n]
+  ['Q1RecipientAccount...', 1000n]   // a Q1 account (or a 0x contract address) — both accepted
 );
-const value = AbiCodec.decodeParameters(['uint256'], '0x...')[0];
+const value = AbiCodec.decodeParameters(['uint256'], '0x...')[0];   // '0x...' here is raw return data (hex)
 ```
 
 ### 6. QNS — `.q` name service
 
 ```javascript
 const q = new (require('qweb3.js').QWeb3)('http://127.0.0.1:9944');
-const qns = q.qns('0xYourQnsRegistryAddress');
+const qns = q.qns('0xYourQnsRegistryContractAddress');  // the registry is a QVM contract (0x hex)
 
-const addr  = await qns.resolve('alice.q');   // -> address or null
+const addr  = await qns.resolve('alice.q');   // -> a "Q1..." account address, or null
 const owner = await qns.owner('alice.q');
-const name  = await qns.reverse('0xSomeAddress');
+const name  = await qns.reverse('Q1SomeAccountAddress...');
 
 // Registration / records require a wallet:
 // await qns.register('alice.q', ownerAddress, { from: ownerAddress });
@@ -261,9 +262,9 @@ qweb3-cli wallet from-mnemonic "word word word ..." --scheme sphincsp
 qweb3-cli address inspect Q1GZD3AGFY5U426V9NX6UNE06ZC4YVKNK3GU9L3C
 qweb3-cli address from-pubkey QPUB1...
 
-# Crypto
+# Crypto  (a signature is raw hex bytes, not an address/key)
 qweb3-cli sign "message" --seed QSEC1... --scheme falcon
-qweb3-cli verify "message" --sig 0x<sig> --pub QPUB1... --scheme falcon
+qweb3-cli verify "message" --sig 0x<hex-signature> --pub QPUB1... --scheme falcon
 
 # Node (JSON-RPC, --url defaults to http://127.0.0.1:9944)
 qweb3-cli rpc q_blockNumber
@@ -272,9 +273,18 @@ qweb3-cli balance Q1GZD3AGFY5U426V9NX6UNE06ZC4YVKNK3GU9L3C
 qweb3-cli fees
 
 # REST gateway (--rest defaults to http://127.0.0.1:8080)
+# ("to" is a Solidity/QVM contract address, "data" is calldata — both hex, not account addresses)
 qweb3-cli rest get /gas-price
-qweb3-cli rest post /transactions/call '{"to":"0x...","data":"0x..."}'
+qweb3-cli rest post /transactions/call '{"to":"0xContractAddress","data":"0xCalldata"}'
 ```
+
+> **Address & key format.** Account/wallet identity is always Q-branded Bech32m:
+> `Q1...` addresses, `QSEC1...` private keys, `QPUB1...` public keys, plus a 24-word
+> recovery phrase — letters and digits only, no `+ / _ = -` symbols. The only `0x`
+> hex you'll ever see is for **Solidity/QVM contract addresses**, **transaction
+> signatures**, **calldata**, and **selectors/hashes** — none of which are account
+> addresses. The SDK accepts a `Q1...` account anywhere a contract expects an
+> `address` argument and converts it for you.
 
 Add `--json` to any command for raw JSON output.
 
