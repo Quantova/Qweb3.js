@@ -2,6 +2,25 @@
 
 const { hexToU8a, u8aToHex } = require('@quantova/util');
 const wasm = require('@quantova/falcon-wasm/generated-node/quantova_falcon_wasm.js');
+const { decodePrivateKey, decodePublicKey } = require('../utils/keys');
+
+// Accept a 32-byte seed as "QSEC1..." (Bech32m), a hex string, or raw bytes.
+function toSeedBytes(seed) {
+  if (typeof seed === 'string') {
+    if (/^(QSEC1|qsec1)/.test(seed)) return decodePrivateKey(seed);
+    return hexToU8a(seed.startsWith('0x') ? seed : `0x${seed}`);
+  }
+  return seed;
+}
+
+// Accept a public key as "QPUB1..." (Bech32m), a hex string, or raw bytes.
+function toPublicKeyBytes(publicKey) {
+  if (typeof publicKey === 'string') {
+    if (/^(QPUB1|qpub1)/.test(publicKey)) return decodePublicKey(publicKey);
+    return hexToU8a(publicKey.startsWith('0x') ? publicKey : `0x${publicKey}`);
+  }
+  return publicKey;
+}
 
 class QuantumSigner {
   /**
@@ -12,7 +31,7 @@ class QuantumSigner {
    * @returns {Object} - { publicKey: Uint8Array, secretKey: Uint8Array }
    */
   static generatePair(seed, scheme = 'falcon') {
-    const seedU8a = typeof seed === 'string' ? hexToU8a(seed.startsWith('0x') ? seed : `0x${seed}`) : seed;
+    const seedU8a = toSeedBytes(seed);
 
     let pair;
     if (scheme === 'sphincsp') {
@@ -38,7 +57,7 @@ class QuantumSigner {
    * @returns {Uint8Array} - The signature bytes.
    */
   static sign(message, seed, scheme = 'falcon') {
-    const seedU8a = typeof seed === 'string' ? hexToU8a(seed.startsWith('0x') ? seed : `0x${seed}`) : seed;
+    const seedU8a = toSeedBytes(seed);
     const msgU8a = typeof message === 'string' ? Buffer.from(message, 'utf-8') : message;
 
     const pair = this.generatePair(seedU8a, scheme);
@@ -64,7 +83,7 @@ class QuantumSigner {
   static verify(message, signature, publicKey, scheme = 'falcon') {
     const msgU8a = typeof message === 'string' ? Buffer.from(message, 'utf-8') : message;
     const sigU8a = typeof signature === 'string' ? hexToU8a(signature.startsWith('0x') ? signature : `0x${signature}`) : signature;
-    const pubU8a = typeof publicKey === 'string' ? hexToU8a(publicKey.startsWith('0x') ? publicKey : `0x${publicKey}`) : publicKey;
+    const pubU8a = toPublicKeyBytes(publicKey);
 
     if (scheme === 'sphincsp') {
       return wasm.sphincsp_verify(pubU8a, msgU8a, sigU8a);
