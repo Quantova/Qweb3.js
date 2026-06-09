@@ -63,8 +63,14 @@ export class RpcProvider {
 }
 
 export namespace AddressUtils {
+  /** True for a Quantova account address ("Q1...") or a 0x H160 contract address. */
   function isAddress(address: string): boolean;
-  function deriveAddressFromPublicKey(publicKey: string, scheme: string): string;
+  /** Derive the Quantova account address ("Q1...") from a post-quantum public key. */
+  function deriveAddressFromPublicKey(publicKey: string | Uint8Array): string;
+  /** Derive the 20-byte account body (SHA3-256(pubKey)[..20], byte[0]=0x40) from a public key. */
+  function accountBodyFromPublicKey(publicKey: string | Uint8Array): Uint8Array;
+  /** Decode a "Q1..." address back to its 20-byte account body. */
+  function addressToBytes(address: string): Uint8Array;
 }
 
 export namespace ValidationUtils {
