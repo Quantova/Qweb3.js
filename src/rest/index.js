@@ -11,6 +11,7 @@
 'use strict';
 
 const axios = require('axios');
+const { toNodeAddress } = require('../utils/keys');
 
 class QRestClient {
   /**
@@ -56,10 +57,10 @@ class QRestClient {
   }
 
   // ---- accounts & state ----
-  getBalance(address, block) { return this._get(`/accounts/${address}/balance`, block ? { block } : undefined); }
-  getTransactionCount(address, block) { return this._get(`/accounts/${address}/transaction-count`, block ? { block } : undefined); }
-  getCode(address, block) { return this._get(`/accounts/${address}/code`, block ? { block } : undefined); }
-  getStorageAt(address, slot, block) { return this._get(`/contracts/${address}/storage/${slot}`, block ? { block } : undefined); }
+  getBalance(address, block) { return this._get(`/accounts/${toNodeAddress(address)}/balance`, block ? { block } : undefined); }
+  getTransactionCount(address, block) { return this._get(`/accounts/${toNodeAddress(address)}/transaction-count`, block ? { block } : undefined); }
+  getCode(address, block) { return this._get(`/accounts/${toNodeAddress(address)}/code`, block ? { block } : undefined); }
+  getStorageAt(address, slot, block) { return this._get(`/contracts/${toNodeAddress(address)}/storage/${slot}`, block ? { block } : undefined); }
 
   // ---- blocks ----
   blockLatest(hydrated) { return this._get('/blocks/latest', hydrated ? { hydrated: true } : undefined); }
