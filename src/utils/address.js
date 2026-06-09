@@ -1,29 +1,83 @@
 // src/utils/address.js
 
-const { hexToU8a, u8aToHex } = require('@quantova/util');
+const { hexToU8a } = require('@quantova/util');
 const { keccakAsHex } = require('@quantova/util-crypto');
+const { sha3_256 } = require('./sha3');
+const { encodeAddress, decodeAddress } = require('./keys');
+
+// A Quantova account address is Bech32m with prefix "q", shown all-capitals -> "Q1...".
+// Case must be uniform (all-upper or all-lower); the decoder verifies the checksum.
+const Q_ADDRESS_RE = /^(Q1[0-9A-Z]+|q1[0-9a-z]+)$/;
+// 0x H160 — used only for QVM/Solidity contract addresses, which are intentionally left unchanged.
+const CONTRACT_HEX_RE = /^0x[a-fA-F0-9]{40}$/;
 
 class AddressUtils {
   /**
-   * Checks if a given value is a valid address.
-   * Supports both legacy EVM hex (0x...) and post-quantum Quantova Base64 H160 addresses.
-   * 
-   * @param {string} value - The value to check.
-   * @returns {boolean} - True if valid.
+   * True if the value is a valid Quantova account address ("Q1..."/"q1...") OR a 0x H160
+   * contract address (Solidity/QVM addresses are unchanged).
+   *
+   * @param {string} value
+   * @returns {boolean}
    */
   static isAddress(value) {
     if (typeof value !== 'string') return false;
-    // Legacy EVM address
-    if (/^0x[a-fA-F0-9]{40}$/.test(value)) return true;
-    // Post-quantum base64 H160 address
-    return /^[A-Za-z0-9+/]{27}=$/.test(value);
+    if (CONTRACT_HEX_RE.test(value)) return true; // QVM/Solidity contract address (unchanged)
+    if (!Q_ADDRESS_RE.test(value)) return false;
+    try {
+      decodeAddress(value); // verifies the Bech32m checksum + prefix
+      return true;
+    } catch {
+      return false;
+    }
   }
 
   /**
-   * Formats an address to lowercase (if legacy EVM hex).
-   * 
-   * @param {string} address - The address to format.
-   * @returns {string} - The formatted address.
+   * Derive the 20-byte account body from a post-quantum public key, exactly as the chain does:
+   * SHA3-256(publicKey)[0..20] with byte[0] forced to 0x40 (the "Q" brand byte).
+   *
+   * @param {Uint8Array|Buffer|string} publicKey - raw public-key bytes or a hex string
+   * @returns {Uint8Array} 20-byte account body
+   */
+  static accountBodyFromPublicKey(publicKey) {
+    let buf;
+    if (typeof publicKey === 'string') {
+      buf = hexToU8a(publicKey.startsWith('0x') ? publicKey : `0x${publicKey}`);
+    } else if (publicKey instanceof Uint8Array || Buffer.isBuffer(publicKey)) {
+      buf = Uint8Array.from(publicKey);
+    } else {
+      throw new Error('Invalid publicKey: expected Uint8Array, Buffer, or hex string');
+    }
+    const body = sha3_256(buf).slice(0, 20);
+    body[0] = 0x40; // "Q" brand byte (matches the chain)
+    return body;
+  }
+
+  /**
+   * Derive the Quantova account address ("Q1...") from a post-quantum public key.
+   *
+   * @param {Uint8Array|Buffer|string} publicKey
+   * @returns {string} address, e.g. "Q1GZD3AGFY5U..."
+   */
+  static deriveAddressFromPublicKey(publicKey) {
+    return encodeAddress(this.accountBodyFromPublicKey(publicKey));
+  }
+
+  /**
+   * Decode a "Q1..." (or "q1...") address back to its 20-byte account body.
+   *
+   * @param {string} address
+   * @returns {Uint8Array} 20 bytes
+   */
+  static addressToBytes(address) {
+    return decodeAddress(address);
+  }
+
+  /**
+   * Normalise an address for display: Q-addresses are returned all-capitals (the canonical
+   * capital-Q form); 0x contract addresses are lower-cased.
+   *
+   * @param {string} address
+   * @returns {string}
    */
   static formatAddress(address) {
     if (!this.isAddress(address)) {
@@ -32,21 +86,21 @@ class AddressUtils {
     if (address.startsWith('0x')) {
       return address.toLowerCase();
     }
-    return address; // Base64 is case-sensitive, return unmodified
+    return address.toUpperCase();
   }
 
+  // --- 0x contract-address helpers (EVM/Solidity — intentionally unchanged) -------------------
+
   /**
-   * Converts a legacy address to a checksummed address.
-   * 
-   * @param {string} address - The address.
-   * @returns {string} - Checksummed address.
+   * EIP-55 checksum for a 0x contract address. Q-addresses carry their own (Bech32m) checksum and
+   * are returned unchanged.
    */
   static toChecksumAddress(address) {
     if (!this.isAddress(address)) {
       throw new Error('Invalid address');
     }
     if (!address.startsWith('0x')) {
-      return address; // Base64 is not checksummed in EVM style
+      return address; // Q-address — already checksummed by Bech32m
     }
 
     const clean = address.toLowerCase().slice(2);
@@ -56,49 +110,17 @@ class AddressUtils {
     for (let i = 0; i < clean.length; i++) {
       const char = clean[i];
       const hashChar = parseInt(addressHash[i], 16);
-
-      if (hashChar > 7) {
-        checksumAddress += char.toUpperCase();
-      } else {
-        checksumAddress += char.toLowerCase();
-      }
+      checksumAddress += hashChar > 7 ? char.toUpperCase() : char.toLowerCase();
     }
 
     return checksumAddress;
   }
 
   /**
-   * Validates the checksum of an address.
+   * Validates the checksum of a 0x contract address.
    */
   static validateChecksum(address) {
     return address === this.toChecksumAddress(address);
-  }
-
-  /**
-   * Formats a public key / account ID to the standard Quantova H160 Base64 address.
-   * 
-   * @param {Uint8Array|string} accountId - The raw public key (32 bytes) or hex string.
-   * @returns {string} - The Base64 H160 address.
-   */
-  static h160Base64FromAccountId(accountId) {
-    let buf;
-    if (typeof accountId === 'string') {
-      buf = hexToU8a(accountId.startsWith('0x') ? accountId : `0x${accountId}`);
-    } else if (accountId instanceof Uint8Array || Buffer.isBuffer(accountId)) {
-      buf = accountId;
-    } else {
-      throw new Error('Invalid accountId format: expected Uint8Array, Buffer, or hex string');
-    }
-
-    // Take the first 20 bytes and encode as base64
-    return Buffer.from(buf.subarray(0, 20)).toString('base64');
-  }
-
-  /**
-   * Derives a Quantova Base64 H160 address from a raw public key.
-   */
-  static deriveAddressFromPublicKey(publicKey) {
-    return this.h160Base64FromAccountId(publicKey);
   }
 
   /**
