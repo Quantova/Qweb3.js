@@ -8,12 +8,12 @@
 //
 // Usage:
 //   qweb3-cli wallet new [--scheme falcon|dilithium|sphincsp]
-//   qweb3-cli wallet from-seed <0xseed> [--scheme ...]
+//   qweb3-cli wallet from-seed <QSEC1...|0xseed> [--scheme ...]
 //   qweb3-cli wallet from-mnemonic "<words>" [--scheme ...]
-//   qweb3-cli address inspect <address>
-//   qweb3-cli address from-pubkey <0xpublickey>
-//   qweb3-cli sign <message> --seed <0xseed> [--scheme ...]
-//   qweb3-cli verify <message> --sig <0xsig> --pub <0xpub> [--scheme ...]
+//   qweb3-cli address inspect <Q1...|0xcontract>
+//   qweb3-cli address from-pubkey <QPUB1...|hexpubkey>
+//   qweb3-cli sign <message> --seed <QSEC1...|0xseed> [--scheme ...]
+//   qweb3-cli verify <message> --sig <0xsig> --pub <QPUB1...|hexpub> [--scheme ...]
 //   qweb3-cli rpc <q_method> [params-json] [--url http://127.0.0.1:9944]
 //   qweb3-cli block [number|latest|finalized] [--url ...]
 //   qweb3-cli balance <address> [--url ...]
@@ -68,16 +68,16 @@ const HELP = `qweb3-cli — Quantova post-quantum CLI toolbelt
 
 Wallet:
   wallet new [--scheme falcon|dilithium|sphincsp]
-  wallet from-seed <0xseed> [--scheme ...]
+  wallet from-seed <QSEC1...|0xseed> [--scheme ...]
   wallet from-mnemonic "<words>" [--scheme ...]
 
 Address:
-  address inspect <address>
-  address from-pubkey <0xpublickey>
+  address inspect <Q1...|0xcontract>
+  address from-pubkey <QPUB1...|hexpubkey>
 
 Crypto:
-  sign <message> --seed <0xseed> [--scheme ...]
-  verify <message> --sig <0xsig> --pub <0xpub> [--scheme ...]
+  sign <message> --seed <QSEC1...|0xseed> [--scheme ...]
+  verify <message> --sig <0xsig> --pub <QPUB1...|hexpub> [--scheme ...]
 
 Node (JSON-RPC, --url, default http://127.0.0.1:9944):
   rpc <q_method> [params-json]
@@ -113,7 +113,7 @@ async function main() {
       if (sub === 'new') {
         account = wallet.create(scheme);
       } else if (sub === 'from-seed') {
-        if (!rest[0]) throw new Error('from-seed requires a 0xseed');
+        if (!rest[0]) throw new Error('from-seed requires a QSEC1... key or 0x seed');
         account = wallet.importPrivateKey(rest[0], scheme);
       } else if (sub === 'from-mnemonic') {
         if (!rest[0]) throw new Error('from-mnemonic requires a quoted phrase');
@@ -156,7 +156,7 @@ async function main() {
       const { QuantumSigner } = lib;
       const message = sub; // first positional after command
       if (!message) throw new Error('sign requires a <message>');
-      if (!flags.seed) throw new Error('sign requires --seed <0xseed>');
+      if (!flags.seed) throw new Error('sign requires --seed <QSEC1...|0xseed>');
       const sig = QuantumSigner.sign(message, flags.seed, scheme);
       const { u8aToHex } = lib;
       out({ scheme, signature: u8aToHex(sig) }, asJson);
