@@ -1,6 +1,7 @@
 // src/rpc/index.js
 
 const axios = require('axios');
+const { toNodeAddress } = require('../utils/keys');
 
 class QRpcClient {
   constructor(endpoint = 'http://127.0.0.1:9944') {
@@ -64,7 +65,7 @@ class QRpcClient {
   }
 
   async getBalance(address, block = 'latest') {
-    return this.call('q_getBalance', [address, block]);
+    return this.call('q_getBalance', [toNodeAddress(address), block]);
   }
 
   async getBlockByHash(hash, fullTxs = false) {
@@ -84,7 +85,7 @@ class QRpcClient {
   }
 
   async getCode(address, block = 'latest') {
-    return this.call('q_getCode', [address, block]);
+    return this.call('q_getCode', [toNodeAddress(address), block]);
   }
 
   async getLogs(filter) {
@@ -92,7 +93,7 @@ class QRpcClient {
   }
 
   async getStorageAt(address, position, block = 'latest') {
-    return this.call('q_getStorageAt', [address, position, block]);
+    return this.call('q_getStorageAt', [toNodeAddress(address), position, block]);
   }
 
   async getTransactionByBlockHashAndIndex(hash, index) {
@@ -108,7 +109,7 @@ class QRpcClient {
   }
 
   async getTransactionCount(address, block = 'latest') {
-    return this.call('q_getTransactionCount', [address, block]);
+    return this.call('q_getTransactionCount', [toNodeAddress(address), block]);
   }
 
   async getTransactionReceipt(hash) {
