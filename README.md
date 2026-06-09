@@ -211,7 +211,7 @@ const { BatchRequest } = require('qweb3.js');
 
 const batch = new BatchRequest('http://127.0.0.1:9944');
 batch.add('q_blockNumber')
-     .add('q_getBalance', ['QOuhXUELsRC0/zow/Vjwft8hNP8=', 'latest'])
+     .add('q_getBalance', ['Q1GZD3AGFY5U426V9NX6UNE06ZC4YVKNK3GU9L3C', 'latest'])
      .add('q_gasPrice');
 
 const results = await batch.execute();   // [{ success, result }, ...] in insertion order
@@ -240,7 +240,7 @@ const receipt = await q.hooks.waitForReceipt(txHash);
 const { QRestClient } = require('qweb3.js');
 
 const rest = new QRestClient('http://127.0.0.1:8080');
-const balance = await rest.getBalance('QOuhXUELsRC0/zow/Vjwft8hNP8=');
+const balance = await rest.getBalance('Q1GZD3AGFY5U426V9NX6UNE06ZC4YVKNK3GU9L3C');
 const latest  = await rest.blockLatest();
 const fees    = await rest.feesEstimate();
 ```
@@ -252,23 +252,23 @@ const fees    = await rest.feesEstimate();
 After installing, the `qweb3-cli` command is available (or run `npx qweb3-cli` / `npm run cli --`):
 
 ```bash
-# Wallets
+# Wallets  (wallet new prints a 24-word recovery phrase + Q1.../QSEC1.../QPUB1...)
 qweb3-cli wallet new --scheme falcon
-qweb3-cli wallet from-seed 0x<32-byte-seed> --scheme dilithium
+qweb3-cli wallet from-seed QSEC1... --scheme dilithium
 qweb3-cli wallet from-mnemonic "word word word ..." --scheme sphincsp
 
 # Addresses
-qweb3-cli address inspect QOuhXUELsRC0/zow/Vjwft8hNP8=
-qweb3-cli address from-pubkey 0x<publickey>
+qweb3-cli address inspect Q1GZD3AGFY5U426V9NX6UNE06ZC4YVKNK3GU9L3C
+qweb3-cli address from-pubkey QPUB1...
 
 # Crypto
-qweb3-cli sign "message" --seed 0x<seed> --scheme falcon
-qweb3-cli verify "message" --sig 0x<sig> --pub 0x<pub> --scheme falcon
+qweb3-cli sign "message" --seed QSEC1... --scheme falcon
+qweb3-cli verify "message" --sig 0x<sig> --pub QPUB1... --scheme falcon
 
 # Node (JSON-RPC, --url defaults to http://127.0.0.1:9944)
 qweb3-cli rpc q_blockNumber
 qweb3-cli block latest
-qweb3-cli balance QOuhXUELsRC0/zow/Vjwft8hNP8=
+qweb3-cli balance Q1GZD3AGFY5U426V9NX6UNE06ZC4YVKNK3GU9L3C
 qweb3-cli fees
 
 # REST gateway (--rest defaults to http://127.0.0.1:8080)
