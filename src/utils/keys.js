@@ -1,0 +1,70 @@
+// src/utils/keys.js
+//
+// Q-branded Bech32m encoding for Quantova addresses and keys. All outputs are ALL-CAPITALS
+// (so they start with a capital "Q"); decoding accepts upper- or lower-case input.
+//
+//   Address      "Q1..."     Bech32m of the 20-byte account body
+//   Private key  "QSEC1..."  Bech32m of the 32-byte seed
+//   Public key   "QPUB1..."  Bech32m of the raw public-key bytes
+
+const { encode, decode } = require('./bech32');
+
+const HRP = { ADDRESS: 'q', SECRET: 'qsec', PUBLIC: 'qpub' };
+
+const up = (s) => s.toUpperCase();
+
+/** Encode a 20-byte account body as a "Q1..." address. */
+function encodeAddress(bytes20) {
+  return up(encode(HRP.ADDRESS, bytes20));
+}
+/** Decode a "Q1..." (or "q1...") address back to its 20 bytes. */
+function decodeAddress(str) {
+  return decode(HRP.ADDRESS, str);
+}
+
+/** Encode a 32-byte seed as a "QSEC1..." private key. */
+function encodePrivateKey(seed32) {
+  return up(encode(HRP.SECRET, seed32));
+}
+/** Decode a "QSEC1..." private key back to its 32-byte seed. */
+function decodePrivateKey(str) {
+  return decode(HRP.SECRET, str);
+}
+
+/** Encode raw public-key bytes as a "QPUB1..." public key. */
+function encodePublicKey(pubBytes) {
+  return up(encode(HRP.PUBLIC, pubBytes));
+}
+/** Decode a "QPUB1..." public key back to its raw bytes. */
+function decodePublicKey(str) {
+  return decode(HRP.PUBLIC, str);
+}
+
+/**
+ * Translate a user-facing address into the form the node's q_* RPC expects. A "Q1..." account
+ * address is decoded to its 20-byte body and returned as 0x-hex (the canonical H160 form an
+ * H160-based RPC accepts); a 0x contract address (or anything else) is passed through unchanged.
+ *
+ * NOTE: the node's exact accepted parameter form should be confirmed against a live testnet node;
+ * this boundary keeps the chain unchanged while users only ever see "Q1...".
+ *
+ * @param {string} address
+ * @returns {string}
+ */
+function toNodeAddress(address) {
+  if (typeof address === 'string' && /^(Q1|q1)/.test(address)) {
+    return '0x' + Buffer.from(decodeAddress(address)).toString('hex');
+  }
+  return address;
+}
+
+module.exports = {
+  HRP,
+  encodeAddress,
+  decodeAddress,
+  encodePrivateKey,
+  decodePrivateKey,
+  encodePublicKey,
+  decodePublicKey,
+  toNodeAddress,
+};
