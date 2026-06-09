@@ -1,8 +1,10 @@
 // src/wallet/index.js
 
-const { hexToU8a, u8aToHex } = require('@quantova/util');
+const { u8aToHex } = require('@quantova/util');
+const { mnemonicGenerate, mnemonicValidate, mnemonicToMiniSecret } = require('@quantova/util-crypto');
 const QuantumSigner = require('../signer');
 const AddressUtils = require('../utils/address');
+const { encodePrivateKey, decodePrivateKey, encodePublicKey } = require('../utils/keys');
 
 class QuantumWallet {
   constructor() {
@@ -11,112 +13,111 @@ class QuantumWallet {
   }
 
   /**
-   * Helper to generate a random 32-byte seed as a hex string.
-   */
-  _generateRandomSeed() {
-    const bytes = require('crypto').randomBytes(32);
-    return '0x' + bytes.toString('hex');
-  }
-
-  /**
-   * Creates a new random post-quantum account and adds it to the wallet.
-   * 
+   * Creates a new post-quantum account with a fresh 24-word recovery phrase and adds it.
+   *
    * @param {string} scheme - 'sphincsp', 'falcon', or 'dilithium'.
-   * @returns {Object} - The created account object.
+   * @returns {Object} account: { address (Q1...), mnemonic (24 words), publicKey (QPUB1...),
+   *                              privateKey (QSEC1...), scheme }
    */
   create(scheme = 'falcon') {
-    const seedHex = this._generateRandomSeed();
-    return this.importPrivateKey(seedHex, scheme);
+    const mnemonic = mnemonicGenerate(24);
+    return this.importMnemonic(mnemonic, scheme);
   }
 
   /**
-   * Imports a post-quantum account from a private key (32-byte hex seed).
-   * 
-   * @param {string} privateKey - 32-byte hex seed.
+   * Imports an account from a 24-word recovery phrase (BIP-39).
+   *
+   * @param {string} mnemonic - the recovery phrase.
    * @param {string} scheme - 'sphincsp', 'falcon', or 'dilithium'.
-   * @returns {Object} - The imported account object.
+   * @returns {Object} the imported account.
+   */
+  importMnemonic(mnemonic, scheme = 'falcon') {
+    if (!mnemonicValidate(mnemonic)) {
+      throw new Error('Invalid recovery phrase');
+    }
+    const seed = mnemonicToMiniSecret(mnemonic); // 32-byte seed
+    return this._addFromSeed(seed, scheme, mnemonic);
+  }
+
+  /**
+   * Imports an account from a "QSEC1..." private key (or, during migration, a legacy 0x / bare-hex
+   * 32-byte seed). Accounts imported this way have no recovery phrase.
+   *
+   * @param {string} privateKey - "QSEC1..." (or legacy hex seed).
+   * @param {string} scheme - 'sphincsp', 'falcon', or 'dilithium'.
+   * @returns {Object} the imported account.
    */
   importPrivateKey(privateKey, scheme = 'falcon') {
-    const seedU8a = hexToU8a(privateKey.startsWith('0x') ? privateKey : `0x${privateKey}`);
-    const keypair = QuantumSigner.generatePair(seedU8a, scheme);
-    const address = AddressUtils.h160Base64FromAccountId(keypair.publicKey);
+    let seed;
+    if (typeof privateKey === 'string' && /^(QSEC1|qsec1)/.test(privateKey)) {
+      seed = decodePrivateKey(privateKey); // Bech32m -> 32-byte seed
+    } else if (typeof privateKey === 'string') {
+      const hex = privateKey.startsWith('0x') ? privateKey.slice(2) : privateKey;
+      seed = Uint8Array.from(Buffer.from(hex, 'hex')); // legacy hex seed
+    } else {
+      throw new Error('Invalid private key');
+    }
+    return this._addFromSeed(seed, scheme, null);
+  }
 
+  /**
+   * Internal: build and register an account object from a 32-byte seed.
+   * The raw seed is kept (non-enumerable) for signing; only the Q-branded forms are displayed.
+   */
+  _addFromSeed(seed, scheme, mnemonic) {
+    const keypair = QuantumSigner.generatePair(seed, scheme);
     const account = {
-      address: address,
-      publicKey: u8aToHex(keypair.publicKey),
-      privateKey: privateKey,
-      scheme: scheme
+      address: AddressUtils.deriveAddressFromPublicKey(keypair.publicKey), // Q1...
+      mnemonic: mnemonic || null, // 24 words (null if imported by private key)
+      publicKey: encodePublicKey(keypair.publicKey), // QPUB1...
+      privateKey: encodePrivateKey(seed), // QSEC1...
+      scheme,
     };
+    // Raw seed for signing — not shown in normal serialisation.
+    Object.defineProperty(account, '_seed', { value: Uint8Array.from(seed), enumerable: false });
 
     this.add(account);
     return account;
   }
 
   /**
-   * Imports an account from a standard mnemonic seed phrase.
-   * Note: In a production-grade Substrate setup, mnemonic seed phrase derivation is typically handled 
-   * via sub-package mnemonic generation, but here we can derive a stable 32-byte seed via standard pbkdf2 or 
-   * a simplified cryptographic hash of the mnemonic to allow seamless testing.
-   * 
-   * @param {string} mnemonic - The mnemonic phrase.
-   * @param {string} scheme - 'sphincsp', 'falcon', or 'dilithium'.
-   * @returns {Object} - The imported account object.
-   */
-  importMnemonic(mnemonic, scheme = 'falcon') {
-    const crypto = require('crypto');
-    // Derive a standard 32-byte seed from the mnemonic
-    const hash = crypto.createHash('sha256').update(mnemonic).digest('hex');
-    return this.importPrivateKey('0x' + hash, scheme);
-  }
-
-  /**
    * Adds an account object directly to the wallet.
-   * 
-   * @param {Object} account - The account object.
    */
   add(account) {
     if (!account.address || !account.privateKey || !account.scheme) {
       throw new Error('Invalid account structure. Must include address, privateKey, and scheme.');
     }
-
     if (this._accountsByAddress.has(account.address)) {
       return; // Already added
     }
-
     this.accounts.push(account);
     this._accountsByAddress.set(account.address, account);
   }
 
   /**
    * Removes an account by address.
-   * 
-   * @param {string} address - The Base64 H160 address.
-   * @returns {boolean} - True if removed.
    */
   remove(address) {
     if (!this._accountsByAddress.has(address)) {
       return false;
     }
-
     this._accountsByAddress.delete(address);
-    this.accounts = this.accounts.filter(acc => acc.address !== address);
+    this.accounts = this.accounts.filter((acc) => acc.address !== address);
     return true;
   }
 
   /**
    * Returns a list of active addresses.
-   * 
-   * @returns {Array<string>}
    */
   getAddresses() {
     return Array.from(this._accountsByAddress.keys());
   }
 
   /**
-   * Signs a transaction's raw payload using the specified account's private key.
-   * 
+   * Signs a transaction's raw payload using the specified account's key.
+   *
    * @param {string|Uint8Array} rawTx - The transaction payload.
-   * @param {string} address - The signing account address.
+   * @param {string} address - The signing account address ("Q1...").
    * @returns {string} - Hex signature.
    */
   signTransaction(rawTx, address) {
@@ -124,8 +125,8 @@ class QuantumWallet {
     if (!account) {
       throw new Error(`Account with address ${address} not found in this wallet.`);
     }
-
-    const signature = QuantumSigner.sign(rawTx, account.privateKey, account.scheme);
+    const seed = account._seed || decodePrivateKey(account.privateKey);
+    const signature = QuantumSigner.sign(rawTx, seed, account.scheme);
     return u8aToHex(signature);
   }
 }
