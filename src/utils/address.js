@@ -13,7 +13,7 @@ const CONTRACT_HEX_RE = /^0x[a-fA-F0-9]{40}$/;
 
 class AddressUtils {
   /**
-   * True if the value is a valid Quantova account address ("Q1..."/"q1...") OR a 0x H160
+   * True if the value is a valid Quantova account address ("Q1...", case-insensitive on input) OR a 0x H160
    * contract address (Solidity/QVM addresses are unchanged).
    *
    * @param {string} value
@@ -65,7 +65,7 @@ class AddressUtils {
   }
 
   /**
-   * Decode a "Q1..." (or "q1...") address back to its 20-byte account body.
+   * Decode a canonical "Q1..." (case-insensitive on input) address back to its 20-byte account body.
    *
    * @param {string} address
    * @returns {Uint8Array} 20 bytes

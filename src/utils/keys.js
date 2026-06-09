@@ -17,7 +17,7 @@ const up = (s) => s.toUpperCase();
 function encodeAddress(bytes20) {
   return up(encode(HRP.ADDRESS, bytes20));
 }
-/** Decode a "Q1..." (or "q1...") address back to its 20 bytes. */
+/** Decode a canonical "Q1..." (case-insensitive on input) address back to its 20 bytes. */
 function decodeAddress(str) {
   return decode(HRP.ADDRESS, str);
 }

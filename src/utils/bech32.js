@@ -65,7 +65,8 @@ function convertBits(data, fromBits, toBits, pad) {
 
 /**
  * Encode raw bytes as a Bech32m string with the given human-readable prefix (HRP).
- * Returns the canonical lowercase form, e.g. encode('q', bytes) -> "q1...".
+ * Returns the raw BIP-350 form (lowercase per spec); the Quantova helpers in keys.js
+ * display-encode it UPPER-CASE as the canonical "Q1..."/"QSEC1..."/"QPUB1..." form.
  *
  * @param {string} hrp - prefix, e.g. 'q' | 'qsec' | 'qpub'
  * @param {Uint8Array|Buffer|number[]} bytes - payload
@@ -85,7 +86,7 @@ function encode(hrp, bytes) {
  * all-uppercase input (rejects mixed case); returns the raw payload bytes.
  *
  * @param {string} expectedHrp - the HRP the string must have
- * @param {string} str - the Bech32m string (e.g. "Q1..." or "q1...")
+ * @param {string} str - the Bech32m string (canonical "Q1...", upper- or lower-case accepted)
  * @returns {Uint8Array}
  */
 function decode(expectedHrp, str) {
