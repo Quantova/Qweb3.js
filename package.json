@@ -1,6 +1,6 @@
 {
   "name": "qweb3.js",
-  "version": "1.1.3",
+  "version": "1.1.4",
   "description": "Quantova Post-Quantum Web3 Client SDK — connect, manage post-quantum accounts, sign and broadcast transactions, and interact with QVM smart contracts.",
   "main": "index.js",
   "module": "index.mjs",
@@ -40,12 +40,12 @@
     "sdk"
   ],
   "dependencies": {
-    "@quantova/api": "^1.0.9",
-    "@quantova/keyring": "^1.0.9",
-    "@quantova/util": "^1.0.9",
-    "@quantova/util-crypto": "^1.0.9",
-    "@quantova/falcon-wasm": "^1.0.9",
-    "@quantova/rpc-provider": "^1.0.9",
+    "@quantova/api": "^1.0.16",
+    "@quantova/keyring": "^1.0.16",
+    "@quantova/util": "^1.0.16",
+    "@quantova/util-crypto": "^1.0.16",
+    "@quantova/falcon-wasm": "^1.0.16",
+    "@quantova/rpc-provider": "^1.0.16",
     "axios": "^1.13.4"
   },
   "engines": {
