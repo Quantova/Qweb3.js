@@ -140,7 +140,22 @@ class QContract {
 
     const data = abiCodec.encodeFunctionCall(frag, args);
 
-    // Delegate signed-extrinsic assembly to the wallet (post-quantum aware).
+    // Preferred: native post-quantum write — build + PQ-sign + submit a revive.call as
+    // the wallet's own native account (the path that actually executes on Quantova).
+    if (typeof this.wallet.signAndSendContractTx === 'function') {
+      const rpcUrl = (this.rpc && (this.rpc.endpoint || this.rpc.url)) || undefined;
+      return this.wallet.signAndSendContractTx({
+        rpcUrl,
+        from,
+        to: this.address,
+        data,
+        value: overrides.value || '0',
+        gas: overrides.gas,
+        storageDepositLimit: overrides.storageDepositLimit,
+      });
+    }
+
+    // Legacy: delegate eth-format signed-extrinsic assembly (q_sendRawTransaction).
     if (typeof this.wallet.buildAndSignContractTx === 'function') {
       const signedHex = await this.wallet.buildAndSignContractTx({
         from,
