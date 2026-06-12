@@ -2,9 +2,24 @@
 
 const { u8aToHex } = require('@quantova/util');
 const { mnemonicGenerate, mnemonicValidate, mnemonicToMiniSecret } = require('@quantova/util-crypto');
+const { ApiPromise, WsProvider } = require('@quantova/api');
+const { Keyring } = require('@quantova/keyring');
 const QuantumSigner = require('../signer');
 const AddressUtils = require('../utils/address');
 const { encodePrivateKey, decodePrivateKey, encodePublicKey } = require('../utils/keys');
+
+// One cached ApiPromise per node URL (native QVM extrinsic assembly + submission).
+const _apiByUrl = new Map();
+function _wsUrl(url) {
+  if (!url) return 'ws://127.0.0.1:9944';
+  return url.replace(/^http:\/\//, 'ws://').replace(/^https:\/\//, 'wss://');
+}
+async function _getApi(url) {
+  const ws = _wsUrl(url);
+  let p = _apiByUrl.get(ws);
+  if (!p) { p = ApiPromise.create({ provider: new WsProvider(ws) }); _apiByUrl.set(ws, p); }
+  return p;
+}
 
 class QuantumWallet {
   constructor() {
@@ -128,6 +143,53 @@ class QuantumWallet {
     const seed = account._seed || decodePrivateKey(account.privateKey);
     const signature = QuantumSigner.sign(rawTx, seed, account.scheme);
     return u8aToHex(signature);
+  }
+
+  /**
+   * Build, post-quantum-sign and SUBMIT a QVM contract write (state-changing call)
+   * as a native `revive.call` extrinsic, and resolve with the transaction hash once
+   * it is in a block. This is the post-quantum write path: the caller is the wallet's
+   * own native PQ account (Falcon/Dilithium/SPHINCS+), not an Ethereum/eth-mapped
+   * account — so it actually executes (eth-format q_sendRawTransaction does not run
+   * for native accounts). Generous fixed weight + storage-deposit are used because the
+   * node's gas dry-run intermittently under-reports and the call would silently revert.
+   *
+   * @param {Object} p
+   * @param {string} p.rpcUrl   - node URL (http/ws); converted to ws for submission
+   * @param {string} p.from     - Q1… signing address (must be in this wallet)
+   * @param {string} p.to       - 0x… QVM contract address
+   * @param {string} p.data     - ABI-encoded calldata (0x… or bare hex)
+   * @param {string|bigint} [p.value='0'] - native TQTOV (plancks) to send (msg.value)
+   * @param {Object} [p.gas]    - { refTime, proofSize } weight override
+   * @param {string|bigint} [p.storageDepositLimit] - plancks; default 100 TQTOV
+   * @returns {Promise<string>} the transaction hash (0x…)
+   */
+  async signAndSendContractTx({ rpcUrl, from, to, data, value = '0', gas, storageDepositLimit }) {
+    const account = from ? this._accountsByAddress.get(from) : this.accounts[0];
+    if (!account) throw new Error(`signing account ${from || ''} not found in this wallet`);
+    const seed = account._seed || decodePrivateKey(account.privateKey);
+    const pair = new Keyring({ type: account.scheme }).addFromSeed(Uint8Array.from(seed));
+
+    const api = await _getApi(rpcUrl);
+    const weight = api.createType('Weight', gas || { refTime: '8000000000', proofSize: '800000' });
+    const sd = (storageDepositLimit != null ? BigInt(storageDepositLimit) : 100n * 10n ** 18n).toString();
+    const callData = String(data).startsWith('0x') ? data : '0x' + data;
+    const val = (typeof value === 'bigint' ? value : BigInt(value || 0)).toString();
+
+    return new Promise((resolve, reject) => {
+      api.tx.revive.call(to, val, weight, sd, callData)
+        .signAndSend(pair, ({ status, dispatchError, txHash }) => {
+          if (!status.isInBlock && !status.isFinalized) return;
+          if (dispatchError) {
+            let m = dispatchError.toString();
+            if (dispatchError.isModule) { try { const d = api.registry.findMetaError(dispatchError.asModule); m = `${d.section}.${d.name}`; } catch (e) { /* keep raw */ } }
+            reject(new Error('contract write failed: ' + m));
+          } else {
+            resolve(txHash.toHex());
+          }
+        })
+        .catch(reject);
+    });
   }
 }
 
