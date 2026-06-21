@@ -8,9 +8,9 @@
 // transaction through the wallet.
 //
 //   const qns = new QNS({ registryAddress, rpc, wallet, restClient });
-//   const addr  = await qns.resolve('alice.q');     // -> a "Q1..." account address (or null)
-//   const name  = await qns.reverse('Q1...');        // -> 'alice.q' or null
-//   const owner = await qns.owner('alice.q');
+//   const addr  = await qns.resolve('alec.q');     // -> a "Q1..." account address (or null)
+//   const name  = await qns.reverse('Q1...');        // -> 'alec.q' or null
+//   const owner = await qns.owner('alec.q');
 //
 // The registry ABI below is a conventional ENS-style resolver/registrar surface
 // (namehash node keys). If your deployed registry uses different method names,
