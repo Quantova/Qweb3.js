@@ -27,8 +27,8 @@ function run() {
   const bytes = AddressUtils.addressToBytes(qAddress);
   if (bytes.length !== 20) throw new Error("Q-address did not decode to 20 bytes");
 
-  const validQNS = 'alice-quantum.q';
-  const invalidQNS = 'alice.eth';
+  const validQNS = 'alec-quantum.q';
+  const invalidQNS = 'alec.eth';
   if (!ValidationUtils.isQNSName(validQNS)) throw new Error("Valid QNS check failed");
   if (ValidationUtils.isQNSName(invalidQNS)) throw new Error("Invalid QNS check failed");
 
