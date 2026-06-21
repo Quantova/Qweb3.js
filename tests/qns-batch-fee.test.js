@@ -9,7 +9,7 @@ function run() {
   if (qns.namehash('') !== '0x0000000000000000000000000000000000000000000000000000000000000000') throw new Error("namehash('') failed");
   if (qns.namehash('eth') !== '0x93cdeb708b7545dc668eb9280176169d1c33cfd8ed6f04690a0bcc88a93fc4ae') throw new Error("namehash('eth') failed");
   if (qns.namehash('foo.eth') !== '0xde9b09fd7c5f901e23a3f19fecc54828e9c848539801e86591bd9801b019f84f') throw new Error("namehash('foo.eth') failed");
-  if (!qns.isValidName('alice.q') || qns.isValidName('alice.eth')) throw new Error("QNS name validation failed");
+  if (!qns.isValidName('alec.q') || qns.isValidName('alec.eth')) throw new Error("QNS name validation failed");
 
   // --- Batch: insertion-order reassembly from out-of-order responses ---
   const prevHandler = global.__AXIOS_HANDLER__;
