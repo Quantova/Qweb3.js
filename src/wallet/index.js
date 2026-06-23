@@ -8,6 +8,31 @@ const QuantumSigner = require('../signer');
 const AddressUtils = require('../utils/address');
 const { encodePrivateKey, decodePrivateKey, encodePublicKey } = require('../utils/keys');
 
+// Account secrets live in a MODULE-PRIVATE WeakMap, not on the account object and not exported, so
+// they cannot be reached via JSON.stringify, console.log/inspect, Object.keys/getOwnPropertyNames,
+// spreads, structuredClone, or by importing a symbol. Only prototype getters / signing read them.
+const _accountSecrets = new WeakMap();
+
+class QuantumAccount {
+  constructor(address, publicKey, scheme, seed, mnemonic) {
+    this.address = address;     // Q1...
+    this.publicKey = publicKey; // QPUB1...
+    this.scheme = scheme;
+    _accountSecrets.set(this, {
+      seed: Uint8Array.from(seed),
+      privateKey: encodePrivateKey(seed), // QSEC1...
+      mnemonic: mnemonic || null,
+    });
+  }
+  get privateKey() { const s = _accountSecrets.get(this); return s ? s.privateKey : undefined; }
+  get mnemonic() { const s = _accountSecrets.get(this); return s ? s.mnemonic : null; }
+  get _seed() { const s = _accountSecrets.get(this); return s ? s.seed : undefined; }
+  toJSON() { return { address: this.address, publicKey: this.publicKey, scheme: this.scheme }; }
+  [Symbol.for('nodejs.util.inspect.custom')]() {
+    return `QuantumAccount { address: '${this.address}', publicKey: '${this.publicKey}', scheme: '${this.scheme}' }`;
+  }
+}
+
 // One cached ApiPromise per node URL (native QVM extrinsic assembly + submission).
 const _apiByUrl = new Map();
 function _wsUrl(url) {
@@ -90,22 +115,15 @@ class QuantumWallet {
    */
   _addFromSeed(seed, scheme, mnemonic) {
     const keypair = QuantumSigner.generatePair(seed, scheme);
-    // Only public, safe-to-display fields are enumerable.
-    const account = {
-      address: AddressUtils.deriveAddressFromPublicKey(keypair.publicKey), // Q1...
-      publicKey: encodePublicKey(keypair.publicKey), // QPUB1...
+    // Secrets are held in the module-private WeakMap (see QuantumAccount); the object itself exposes
+    // only address/publicKey/scheme, so no serialization/inspection/own-property path can leak them. (QW3-KEY-001)
+    const account = new QuantumAccount(
+      AddressUtils.deriveAddressFromPublicKey(keypair.publicKey),
+      encodePublicKey(keypair.publicKey),
       scheme,
-    };
-    // Secrets are NON-ENUMERABLE so they cannot leak via JSON.stringify, console.log/util.inspect,
-    // Object.keys, for-in, spreads, or a logger; still directly accessible by name. (QW3-KEY-001)
-    const hide = (k, v) => Object.defineProperty(account, k, { value: v, enumerable: false });
-    hide('mnemonic', mnemonic || null);
-    hide('privateKey', encodePrivateKey(seed)); // QSEC1...
-    hide('_seed', Uint8Array.from(seed));
-    hide('toJSON', function () { return { address: this.address, publicKey: this.publicKey, scheme: this.scheme }; });
-    hide(Symbol.for('nodejs.util.inspect.custom'), function () {
-      return `QuantumAccount { address: '${this.address}', publicKey: '${this.publicKey}', scheme: '${this.scheme}' }`;
-    });
+      seed,
+      mnemonic,
+    );
 
     this.add(account);
     return account;
