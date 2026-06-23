@@ -13,6 +13,10 @@
 const axios = require('axios');
 const { toNodeAddress } = require('../utils/keys');
 
+// Encode a value for safe use as ONE URL path segment (neutralizes '/', '..', etc.) so a
+// user-supplied address/slot/hash/block tag cannot inject extra path segments. (QWEB3-VAL-001)
+const seg = (v) => encodeURIComponent(String(v));
+
 class QRestClient {
   /**
    * @param {string} baseUrl - REST gateway base, e.g. https://api.quantova.io
@@ -57,22 +61,22 @@ class QRestClient {
   }
 
   // ---- accounts & state ----
-  getBalance(address, block) { return this._get(`/accounts/${toNodeAddress(address)}/balance`, block ? { block } : undefined); }
-  getTransactionCount(address, block) { return this._get(`/accounts/${toNodeAddress(address)}/transaction-count`, block ? { block } : undefined); }
-  getCode(address, block) { return this._get(`/accounts/${toNodeAddress(address)}/code`, block ? { block } : undefined); }
-  getStorageAt(address, slot, block) { return this._get(`/contracts/${toNodeAddress(address)}/storage/${slot}`, block ? { block } : undefined); }
+  getBalance(address, block) { return this._get(`/accounts/${seg(toNodeAddress(address))}/balance`, block ? { block } : undefined); }
+  getTransactionCount(address, block) { return this._get(`/accounts/${seg(toNodeAddress(address))}/transaction-count`, block ? { block } : undefined); }
+  getCode(address, block) { return this._get(`/accounts/${seg(toNodeAddress(address))}/code`, block ? { block } : undefined); }
+  getStorageAt(address, slot, block) { return this._get(`/contracts/${seg(toNodeAddress(address))}/storage/${seg(slot)}`, block ? { block } : undefined); }
 
   // ---- blocks ----
   blockLatest(hydrated) { return this._get('/blocks/latest', hydrated ? { hydrated: true } : undefined); }
   blockFinalized(hydrated) { return this._get('/blocks/finalized', hydrated ? { hydrated: true } : undefined); }
-  blockByNumber(number, hydrated) { return this._get(`/blocks/number/${number}`, hydrated ? { hydrated: true } : undefined); }
-  blockByHash(hash, hydrated) { return this._get(`/blocks/hash/${hash}`, hydrated ? { hydrated: true } : undefined); }
-  blockTxCountByNumber(number) { return this._get(`/blocks/number/${number}/transaction-count`); }
-  blockTxCountByHash(hash) { return this._get(`/blocks/hash/${hash}/transaction-count`); }
+  blockByNumber(number, hydrated) { return this._get(`/blocks/number/${seg(number)}`, hydrated ? { hydrated: true } : undefined); }
+  blockByHash(hash, hydrated) { return this._get(`/blocks/hash/${seg(hash)}`, hydrated ? { hydrated: true } : undefined); }
+  blockTxCountByNumber(number) { return this._get(`/blocks/number/${seg(number)}/transaction-count`); }
+  blockTxCountByHash(hash) { return this._get(`/blocks/hash/${seg(hash)}/transaction-count`); }
 
   // ---- transactions ----
-  getTransaction(hash) { return this._get(`/transactions/${hash}`); }
-  getTransactionReceipt(hash) { return this._get(`/transactions/${hash}/receipt`); }
+  getTransaction(hash) { return this._get(`/transactions/${seg(hash)}`); }
+  getTransactionReceipt(hash) { return this._get(`/transactions/${seg(hash)}/receipt`); }
   sendRawTransaction(rawTransaction) { return this._post('/transactions', { rawTransaction }); }
   call(txObject, block) { return this._post('/transactions/call', { ...txObject, block }); }
   estimateGas(txObject) { return this._post('/transactions/estimate-gas', txObject); }
@@ -95,7 +99,7 @@ class QRestClient {
   // ---- bridge ----
   bridgeQuote(body) { return this._post('/bridge/quote', body); }
   bridgeInitiate(body) { return this._post('/bridge/initiate', body); }
-  bridgeStatus(tx, params) { return this._get(`/bridge/status/${tx}`, params); }
+  bridgeStatus(tx, params) { return this._get(`/bridge/status/${seg(tx)}`, params); }
   bridgeClaim(body) { return this._post('/bridge/claim', body); }
 }
 
