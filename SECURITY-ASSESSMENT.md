@@ -1,4 +1,4 @@
-# Security Assessment -  qweb3.js
+# Security Assessment - qweb3.js
 
 - **Package:** `qweb3.js` (npm)
 - **Assessment date:** 2026-06-23
@@ -19,8 +19,8 @@ Three classes of defect were identified and remediated across releases:
 3. `verify()` could raise on malformed input, and an unknown signature scheme could fall
    through to a default algorithm.
 
-All three are fixed in the current release. The remaining residual exposure -  an attacker who
-is **already executing code in the host process** -  cannot be eliminated in any pure-JavaScript
+All three are fixed in the current release. The remaining residual exposure - an attacker who
+is **already executing code in the host process** - cannot be eliminated in any pure-JavaScript
 library and is addressed under *Recommendations*.
 
 qweb3.js is a thin client over the `q_*` JSON-RPC. Post-quantum signing is delegated to the
@@ -44,7 +44,7 @@ external libraries listed under *Trust boundary*, which require their own review
 | QW3-KEY-001 | Account object exposed the reversible private key (QSEC1) and mnemonic as enumerable properties, leaking them via `JSON.stringify`, `console.log`, structured loggers, and `Object.getOwnPropertyNames` | High | 1.1.7 (hardened in 1.1.8) | GHSA-4v25-64xj-v65r |
 | QW3-KEY-003 | CLI printed the private key to stdout and accepted the seed as a command-line argument | High | 1.1.8 | GHSA-4v25-64xj-v65r |
 | QWEB3-VAL-001 | REST client interpolated unvalidated input (address, storage slot, block number/hash) into URL paths; `toNodeAddress` passed non-address strings through unchanged | Low-medium | 1.1.9 | GHSA-wwv3-wvvp-mpq3 |
-| QWEB3-VAL-002 | `verify()` could throw on a malformed signature; an unknown scheme silently fell through to Falcon | Low | 1.1.10 | -  |
+| QWEB3-VAL-002 | `verify()` could throw on a malformed signature; an unknown scheme silently fell through to Falcon | Low | 1.1.10 | - |
 
 ## Verified sound
 
@@ -69,9 +69,9 @@ The SDK delegates all signing, per-signature randomness, and verification math t
 libraries that are outside the scope of this assessment and require their own cryptographic
 review:
 
-- Falcon-512 -  `@quantova/falcon-wasm`
-- ML-DSA / Dilithium -  FIPS-204 implementation
-- SLH-DSA / SPHINCS+ -  FIPS-205 implementation
+- Falcon-512 - `@quantova/falcon-wasm`
+- ML-DSA / Dilithium - FIPS-204 implementation
+- SLH-DSA / SPHINCS+ - FIPS-205 implementation
 
 ## Recommendations for integrators
 
@@ -80,7 +80,7 @@ review:
    methods.
 3. Do not rely on the SDK to redact secrets that an in-process attacker is actively trying to
    read. A leaked QSEC1 string reconstitutes full signing capability. For high-value keys, hold
-   key material in an HSM or OS keystore -  no pure-JavaScript library can prevent code running
+   key material in an HSM or OS keystore - no pure-JavaScript library can prevent code running
    in the same process from reading a live key, which is the same trust boundary as calling
    `account.privateKey` directly.
 4. If any version **earlier than 1.1.8** was used, audit application logs, crash reports, and CI
