@@ -1,6 +1,6 @@
 {
   "name": "qweb3.js",
-  "version": "1.1.8",
+  "version": "1.1.9",
   "license": "BUSL-1.1",
   "description": "Quantova Post-Quantum Web3 Client SDK — connect, manage post-quantum accounts, sign and broadcast transactions, and interact with QVM smart contracts.",
   "main": "index.js",
