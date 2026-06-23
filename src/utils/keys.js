@@ -69,7 +69,13 @@ function toNodeAddress(address) {
   if (typeof address === 'string' && /^(Q1|q1)/.test(address)) {
     return '0x' + Buffer.from(decodeAddress(address)).toString('hex');
   }
-  return address;
+  // A 0x H160 (20-byte) contract/Solidity address is accepted and normalized to lowercase.
+  if (typeof address === 'string' && /^0x[0-9a-fA-F]{40}$/.test(address)) {
+    return '0x' + address.slice(2).toLowerCase();
+  }
+  // Reject anything else at the boundary: an unvalidated string would otherwise be interpolated
+  // into RPC params / REST URL paths (path-injection surface). (QWEB3-VAL-001)
+  throw new Error('invalid address: expected a "Q1..." account address or a 0x-prefixed 20-byte hex address');
 }
 
 module.exports = {
