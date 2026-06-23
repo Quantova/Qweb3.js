@@ -8,7 +8,17 @@ const { decodePrivateKey, decodePublicKey } = require('../utils/keys');
 function toSeedBytes(seed) {
   if (typeof seed === 'string') {
     if (/^(QSEC1|qsec1)/.test(seed)) return decodePrivateKey(seed);
-    return hexToU8a(seed.startsWith('0x') ? seed : `0x${seed}`);
+    // [QW3-001] Legacy hex seed: require EXACTLY 64 hex chars (optionally 0x-prefixed) before
+    // decoding, and assert the result is 32 bytes. hexToU8a is lenient about length/odd nibbles,
+    // which would otherwise let a short or malformed seed through.
+    if (!/^(0x)?[0-9a-fA-F]{64}$/.test(seed)) {
+      throw new Error('Invalid seed: expected a 64-hex-char (32-byte) seed or a "QSEC1..." key');
+    }
+    const bytes = hexToU8a(seed.startsWith('0x') ? seed : `0x${seed}`);
+    if (bytes.length !== 32) {
+      throw new Error('Invalid seed: decoded seed must be exactly 32 bytes');
+    }
+    return bytes;
   }
   return seed;
 }
