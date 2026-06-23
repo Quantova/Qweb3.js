@@ -32,6 +32,15 @@ function toPublicKeyBytes(publicKey) {
   return publicKey;
 }
 
+// Resolve the wasm function for (scheme, op), rejecting any unknown scheme so an unrecognized
+// value can never silently fall through to a different algorithm. (QWEB3-VAL-002)
+const SCHEME_OPS = { falcon: 'falcon', dilithium: 'dilithium', sphincsp: 'sphincsp' };
+function wasmFn(scheme, op) {
+  const s = SCHEME_OPS[scheme];
+  if (!s) throw new Error(`unknown signature scheme: ${scheme} (expected falcon, dilithium, or sphincsp)`);
+  return wasm[`${s}_${op}`];
+}
+
 class QuantumSigner {
   /**
    * Generates a post-quantum keypair from a seed.
@@ -42,16 +51,7 @@ class QuantumSigner {
    */
   static generatePair(seed, scheme = 'falcon') {
     const seedU8a = toSeedBytes(seed);
-
-    let pair;
-    if (scheme === 'sphincsp') {
-      pair = wasm.sphincsp_pair_from_seed(seedU8a);
-    } else if (scheme === 'dilithium') {
-      pair = wasm.dilithium_pair_from_seed(seedU8a);
-    } else {
-      pair = wasm.falcon_pair_from_seed(seedU8a);
-    }
-
+    const pair = wasmFn(scheme, 'pair_from_seed')(seedU8a);
     return {
       publicKey: pair.public_key,
       secretKey: seedU8a
@@ -71,14 +71,7 @@ class QuantumSigner {
     const msgU8a = typeof message === 'string' ? Buffer.from(message, 'utf-8') : message;
 
     const pair = this.generatePair(seedU8a, scheme);
-
-    if (scheme === 'sphincsp') {
-      return wasm.sphincsp_sign(seedU8a, pair.publicKey, msgU8a);
-    } else if (scheme === 'dilithium') {
-      return wasm.dilithium_sign(seedU8a, pair.publicKey, msgU8a);
-    } else {
-      return wasm.falcon_sign(seedU8a, pair.publicKey, msgU8a);
-    }
+    return wasmFn(scheme, 'sign')(seedU8a, pair.publicKey, msgU8a);
   }
 
   /**
@@ -91,16 +84,16 @@ class QuantumSigner {
    * @returns {boolean} - True if valid, false otherwise.
    */
   static verify(message, signature, publicKey, scheme = 'falcon') {
-    const msgU8a = typeof message === 'string' ? Buffer.from(message, 'utf-8') : message;
-    const sigU8a = typeof signature === 'string' ? hexToU8a(signature.startsWith('0x') ? signature : `0x${signature}`) : signature;
-    const pubU8a = toPublicKeyBytes(publicKey);
-
-    if (scheme === 'sphincsp') {
-      return wasm.sphincsp_verify(pubU8a, msgU8a, sigU8a);
-    } else if (scheme === 'dilithium') {
-      return wasm.dilithium_verify(pubU8a, msgU8a, sigU8a);
-    } else {
-      return wasm.falcon_verify(pubU8a, msgU8a, sigU8a);
+    // verify() on untrusted input must be TOTAL: a malformed signature/public key, or an unknown
+    // scheme, yields false rather than throwing, so a caller cannot be crashed by a crafted
+    // signature. (QWEB3-VAL-002)
+    try {
+      const msgU8a = typeof message === 'string' ? Buffer.from(message, 'utf-8') : message;
+      const sigU8a = typeof signature === 'string' ? hexToU8a(signature.startsWith('0x') ? signature : `0x${signature}`) : signature;
+      const pubU8a = toPublicKeyBytes(publicKey);
+      return wasmFn(scheme, 'verify')(pubU8a, msgU8a, sigU8a) === true;
+    } catch (_e) {
+      return false;
     }
   }
 }
