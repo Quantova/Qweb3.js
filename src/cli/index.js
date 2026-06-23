@@ -121,13 +121,16 @@ async function main() {
       } else {
         throw new Error(`unknown wallet subcommand '${sub}' (new|from-seed|from-mnemonic)`);
       }
-      out({
-        address: account.address,
-        scheme: account.scheme,
-        publicKey: account.publicKey,
-        privateKey: account.privateKey,
-        warning: 'Keep privateKey secret. Anyone with it controls this account.',
-      }, asJson);
+      const revealKey = flags['show-private-key'] === true || flags['unsafe'] === true;
+      const result = { address: account.address, scheme: account.scheme, publicKey: account.publicKey };
+      // New wallet: show the recovery phrase (the backup) by default; never dump the raw QSEC1
+      // private key unless explicitly requested with --show-private-key. (QW3-KEY-003)
+      if (sub === 'new' && account.mnemonic) result.mnemonic = account.mnemonic;
+      if (revealKey) result.privateKey = account.privateKey;
+      result.warning = (result.mnemonic || result.privateKey)
+        ? 'SECRET shown above - store it offline; never paste it into logs, chat, CI, or a recorded terminal. Anyone with it controls this account.'
+        : 'Private key hidden. Re-run with --show-private-key to reveal it (handle with care).';
+      out(result, asJson);
       return;
     }
 
