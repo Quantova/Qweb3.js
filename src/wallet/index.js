@@ -90,15 +90,22 @@ class QuantumWallet {
    */
   _addFromSeed(seed, scheme, mnemonic) {
     const keypair = QuantumSigner.generatePair(seed, scheme);
+    // Only public, safe-to-display fields are enumerable.
     const account = {
       address: AddressUtils.deriveAddressFromPublicKey(keypair.publicKey), // Q1...
-      mnemonic: mnemonic || null, // 24 words (null if imported by private key)
       publicKey: encodePublicKey(keypair.publicKey), // QPUB1...
-      privateKey: encodePrivateKey(seed), // QSEC1...
       scheme,
     };
-    // Raw seed for signing — not shown in normal serialisation.
-    Object.defineProperty(account, '_seed', { value: Uint8Array.from(seed), enumerable: false });
+    // Secrets are NON-ENUMERABLE so they cannot leak via JSON.stringify, console.log/util.inspect,
+    // Object.keys, for-in, spreads, or a logger; still directly accessible by name. (QW3-KEY-001)
+    const hide = (k, v) => Object.defineProperty(account, k, { value: v, enumerable: false });
+    hide('mnemonic', mnemonic || null);
+    hide('privateKey', encodePrivateKey(seed)); // QSEC1...
+    hide('_seed', Uint8Array.from(seed));
+    hide('toJSON', function () { return { address: this.address, publicKey: this.publicKey, scheme: this.scheme }; });
+    hide(Symbol.for('nodejs.util.inspect.custom'), function () {
+      return `QuantumAccount { address: '${this.address}', publicKey: '${this.publicKey}', scheme: '${this.scheme}' }`;
+    });
 
     this.add(account);
     return account;
