@@ -24,19 +24,16 @@ npm install qweb3.js
 ## Quick start
 
 ```js
-import { Qweb3 } from 'qweb3.js';
+import { QWeb3 } from 'qweb3.js';
 
-// connect to a Quantova node
-const q = new Qweb3('wss://rpc.quantova.org');
+// connect to a Quantova node (https or wss)
+const q = new QWeb3('https://rpc.quantova.org');
 
 // create a post-quantum account (Falcon by default)
-const account = await q.accounts.create();      // → { address: 'Q1…', mnemonic }
+const account = q.wallet.create();   // { address: 'Q1...', mnemonic, publicKey, privateKey, scheme }
 
-// read a balance
-const balance = await q.getBalance(account.address);
-
-// sign + send a transfer
-const hash = await q.tx.transfer(account, 'Q1…recipient', '1.5');
+// read a balance over the q_ JSON-RPC
+const balance = await q.rpc.getBalance(account.address);
 ```
 
 > API surface may vary by version — see the source for the exact methods.
@@ -48,4 +45,4 @@ const hash = await q.tx.transfer(account, 'Q1…recipient', '1.5');
 - 💻 Source — https://github.com/Quantova/Qweb3.js
 
 ## License
-Apache-2.0 © Quantova
+BUSL-1.1 - (c) 2026 Quantova Inc. See [LICENSE](./LICENSE).
