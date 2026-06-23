@@ -11,15 +11,29 @@ const { encode, decode } = require('./bech32');
 
 const HRP = { ADDRESS: 'q', SECRET: 'qsec', PUBLIC: 'qpub' };
 
+// "Q" brand byte (matches the chain): a valid 20-byte account body always starts with 0x40.
+const Q_BRAND_BYTE = 0x40;
+const ACCOUNT_BODY_LEN = 20;
+
 const up = (s) => s.toUpperCase();
 
 /** Encode a 20-byte account body as a "Q1..." address. */
 function encodeAddress(bytes20) {
   return up(encode(HRP.ADDRESS, bytes20));
 }
-/** Decode a canonical "Q1..." (case-insensitive on input) address back to its 20 bytes. */
+/**
+ * Decode a canonical "Q1..." (case-insensitive on input) address back to its 20 bytes.
+ *
+ * [QWEB3-TX-005] A well-formed checksum is not sufficient: enforce that the decoded body is
+ * exactly 20 bytes AND its first byte is the 0x40 "Q" brand byte, matching the chain. This
+ * rejects strings that pass the Bech32m checksum but do not encode a real account body.
+ */
 function decodeAddress(str) {
-  return decode(HRP.ADDRESS, str);
+  const body = decode(HRP.ADDRESS, str);
+  if (body.length !== ACCOUNT_BODY_LEN || body[0] !== Q_BRAND_BYTE) {
+    throw new Error('invalid Quantova address: body must be 20 bytes starting with 0x40');
+  }
+  return body;
 }
 
 /** Encode a 32-byte seed as a "QSEC1..." private key. */
@@ -60,6 +74,8 @@ function toNodeAddress(address) {
 
 module.exports = {
   HRP,
+  Q_BRAND_BYTE,
+  ACCOUNT_BODY_LEN,
   encodeAddress,
   decodeAddress,
   encodePrivateKey,
