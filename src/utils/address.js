@@ -3,7 +3,7 @@
 const { hexToU8a } = require('@quantova/util');
 const { keccakAsHex } = require('@quantova/util-crypto');
 const { sha3_256 } = require('./sha3');
-const { encodeAddress, decodeAddress, decodePublicKey } = require('./keys');
+const { encodeAddress, decodeAddress, decodePublicKey, Q_BRAND_BYTE } = require('./keys');
 
 // A Quantova account address is Bech32m with prefix "q", shown all-capitals -> "Q1...".
 // Case must be uniform (all-upper or all-lower); the decoder verifies the checksum.
@@ -24,7 +24,10 @@ class AddressUtils {
     if (CONTRACT_HEX_RE.test(value)) return true; // QVM/Solidity contract address (unchanged)
     if (!Q_ADDRESS_RE.test(value)) return false;
     try {
-      decodeAddress(value); // verifies the Bech32m checksum + prefix
+      // [QWEB3-TX-005] decodeAddress now enforces a 20-byte body whose first byte is the 0x40
+      // "Q" brand byte (it throws otherwise), so a string that merely passes the Bech32m
+      // checksum but does not encode a real account body is correctly rejected here.
+      decodeAddress(value);
       return true;
     } catch {
       return false;
@@ -50,7 +53,7 @@ class AddressUtils {
       throw new Error('Invalid publicKey: expected Uint8Array, Buffer, or hex string');
     }
     const body = sha3_256(buf).slice(0, 20);
-    body[0] = 0x40; // "Q" brand byte (matches the chain)
+    body[0] = Q_BRAND_BYTE; // "Q" brand byte (matches the chain) [QWEB3-TX-005]
     return body;
   }
 
