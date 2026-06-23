@@ -2,6 +2,21 @@
 const fs = require('fs');
 const path = require('path');
 
+// Test-only: route axios through the global mock handler a suite installs (keeps prod transport clean).
+const axios = require('axios');
+const _qweb3OrigAdapter = axios.defaults.adapter;
+axios.defaults.adapter = async (config) => {
+  if (typeof global.__AXIOS_HANDLER__ === 'function') {
+    // axios serializes the body to a JSON string before the adapter; hand the mock the
+    // parsed payload it expects (array for a batch, object for a single request).
+    let data = config.data;
+    if (typeof data === 'string') { try { data = JSON.parse(data); } catch (e) { /* leave as-is */ } }
+    const r = await global.__AXIOS_HANDLER__({ ...config, data });
+    return { data: r && r.data, status: 200, statusText: 'OK', headers: {}, config };
+  }
+  return _qweb3OrigAdapter(config);
+};
+
 console.log("====================================================");
 console.log("      Quantova Enterprise SDK Global Test Suite     ");
 console.log("====================================================\n");
