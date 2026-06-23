@@ -67,8 +67,17 @@ class QuantumWallet {
     if (typeof privateKey === 'string' && /^(QSEC1|qsec1)/.test(privateKey)) {
       seed = decodePrivateKey(privateKey); // Bech32m -> 32-byte seed
     } else if (typeof privateKey === 'string') {
+      // [QW3-001] Legacy hex seed: require EXACTLY 64 hex chars (optionally 0x-prefixed) before
+      // decoding. Buffer.from(..., 'hex') silently drops trailing non-hex / odd nibbles, which
+      // would yield a short, attacker-influenced seed; validate first, then assert 32 bytes.
+      if (!/^(0x)?[0-9a-fA-F]{64}$/.test(privateKey)) {
+        throw new Error('Invalid private key: expected a 64-hex-char (32-byte) seed or a "QSEC1..." key');
+      }
       const hex = privateKey.startsWith('0x') ? privateKey.slice(2) : privateKey;
       seed = Uint8Array.from(Buffer.from(hex, 'hex')); // legacy hex seed
+      if (seed.length !== 32) {
+        throw new Error('Invalid private key: decoded seed must be exactly 32 bytes');
+      }
     } else {
       throw new Error('Invalid private key');
     }
