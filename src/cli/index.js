@@ -113,8 +113,10 @@ async function main() {
       if (sub === 'new') {
         account = wallet.create(scheme);
       } else if (sub === 'from-seed') {
-        if (!rest[0]) throw new Error('from-seed requires a QSEC1... key or 0x seed');
-        account = wallet.importPrivateKey(rest[0], scheme);
+        const importSeed = rest[0] || process.env.QWEB3_SEED;
+        if (!importSeed) throw new Error('from-seed needs a seed via the QWEB3_SEED env var (preferred) or as an argument');
+        if (rest[0]) process.stderr.write('warning: a seed passed as an argument is exposed in shell history and the process list; prefer the QWEB3_SEED env var.\n');
+        account = wallet.importPrivateKey(importSeed, scheme);
       } else if (sub === 'from-mnemonic') {
         if (!rest[0]) throw new Error('from-mnemonic requires a quoted phrase');
         account = wallet.importMnemonic(rest[0], scheme);
@@ -159,8 +161,10 @@ async function main() {
       const { QuantumSigner } = lib;
       const message = sub; // first positional after command
       if (!message) throw new Error('sign requires a <message>');
-      if (!flags.seed) throw new Error('sign requires --seed <QSEC1...|0xseed>');
-      const sig = QuantumSigner.sign(message, flags.seed, scheme);
+      const signSeed = flags.seed || process.env.QWEB3_SEED;
+      if (!signSeed) throw new Error('sign needs a seed via the QWEB3_SEED env var (preferred) or --seed <QSEC1...|0xseed>');
+      if (flags.seed) process.stderr.write('warning: --seed on the command line is exposed in shell history and the process list; prefer the QWEB3_SEED env var.\n');
+      const sig = QuantumSigner.sign(message, signSeed, scheme);
       const { u8aToHex } = lib;
       out({ scheme, signature: u8aToHex(sig) }, asJson);
       return;
